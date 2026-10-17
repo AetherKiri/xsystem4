@@ -292,6 +292,8 @@ static void apply_daibanchou_hacks(struct ain *ain)
 
 void apply_game_specific_hacks(struct ain *ain)
 {
+	game_daibanchou_en = game_rance02_mg = game_rance6_mg = false;
+	game_rance7_mg = game_rance8 = game_rance8_mg = game_dungeons_and_dolls = false;
 	char *game_name = sjis2utf(config.game_name, 0);
 	if (!strcmp(game_name, "大番長")) {
 		apply_daibanchou_hacks(ain);

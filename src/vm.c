@@ -15,6 +15,9 @@
  */
 
 #define VM_PRIVATE
+#ifdef XSYSTEM4_EMBEDDED
+#include "embedded.h"
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -2374,7 +2377,11 @@ static enum opcode execute_instruction(enum opcode opcode)
 
 static void vm_execute(void)
 {
+	unsigned checkpoint_counter = 0;
 	for (;;) {
+#ifdef XSYSTEM4_EMBEDDED
+		if (!(checkpoint_counter++ & 4095)) xsystem4_host_checkpoint();
+#endif
 		uint16_t opcode;
 		if (instr_ptr == VM_RETURN)
 			return;
@@ -2434,6 +2441,9 @@ _Noreturn void vm_reset(void)
 
 int vm_execute_ain(struct ain *program)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	xsystem4_host_vm_started();
+#endif
 	ain = program;
 	setjmp(reset_buf);
 
@@ -2544,6 +2554,8 @@ _Noreturn void _vm_error(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsnprintf(msg, 1024, fmt, ap);
 	va_end(ap);
+	if (sys_error_handler)
+		sys_error_handler(msg);
 
 	dbg_repl(DBG_STOP_ERROR, msg);
 	sys_exit(1);
@@ -2556,12 +2568,25 @@ int vm_time(void)
 
 void vm_sleep(int ms)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	uint32_t remaining = ms > 0 ? (uint32_t)ms : 0;
+	do {
+		xsystem4_host_checkpoint();
+		uint32_t slice = remaining > 8 ? 8 : remaining;
+		SDL_Delay(slice);
+		remaining -= slice;
+	} while (remaining);
+#else
 	SDL_Delay(ms);
+#endif
 }
 
 _Noreturn void vm_exit(int code)
 {
 	vm_free();
+#ifdef XSYSTEM4_EMBEDDED
+	xsystem4_host_vm_closed();
+#endif
 #ifdef DEBUG_HEAP
 	for (size_t i = 0; i < heap_size; i++) {
 		if (heap[i].ref > 0)
@@ -2571,3 +2596,13 @@ _Noreturn void vm_exit(int code)
 #endif
 	sys_exit(code);
 }
+
+#ifdef XSYSTEM4_EMBEDDED
+void xsystem4_vm_shutdown(void)
+{
+	vm_free();
+	stack_ptr = 0;
+	call_stack_ptr = 0;
+	instr_ptr = VM_RETURN;
+}
+#endif

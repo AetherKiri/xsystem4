@@ -67,7 +67,7 @@ void heap_init(void)
 		heap = xcalloc(1, INITIAL_HEAP_SIZE * sizeof(struct vm_pointer));
 		heap_free_stack = xmalloc(INITIAL_HEAP_SIZE * sizeof(int32_t));
 	} else {
-		memset(heap, 0, heap_size * sizeof(struct vm_pointer*));
+		memset(heap, 0, heap_size * sizeof(struct vm_pointer));
 	}
 
 	for (size_t i = 0; i < heap_size; i++) {

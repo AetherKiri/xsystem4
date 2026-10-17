@@ -38,6 +38,7 @@ struct font_ft {
 	unsigned current_size;
 	unsigned nr_sizes;
 	struct font_size sizes[MAX_FONT_SIZES];
+	void *buffer;
 };
 
 static FT_Library ft_lib;
@@ -61,6 +62,21 @@ void ft_font_init(void)
 	if (FT_Init_FreeType(&ft_lib)) {
 		ERROR("Failed to initialize FreeType");
 	}
+}
+
+void ft_font_fini(void)
+{
+	if (ft_lib) FT_Done_FreeType(ft_lib);
+	ft_lib = NULL;
+}
+
+static void ft_font_destroy(struct font *value)
+{
+	struct font_ft *font = (void*)value;
+	for (unsigned i = 0; i < font->nr_sizes; i++) gfx_font_size_fini(&font->sizes[i]);
+	FT_Done_Face(font->font);
+	free(font->buffer);
+	free(font);
 }
 
 static struct font_size *ft_font_get_size(struct font *_font, float size)
@@ -227,6 +243,7 @@ struct font *ft_font_load(const char *path)
 		free(font);
 		return NULL;
 	}
+	font->buffer = buf;
 #else
 	if (FT_New_Face(ft_lib, path, 0, &font->font)) {
 		free(font);
@@ -236,10 +253,7 @@ struct font *ft_font_load(const char *path)
 
 	if (!font->font->charmap) {
 		WARNING("Font '%s' doesn't contain unicode charmap", path);
-#ifdef __ANDROID__
-		free(buf);
-#endif
-		free(font);
+		ft_font_destroy(&font->super);
 		return NULL;
 	}
 
@@ -249,5 +263,6 @@ struct font *ft_font_load(const char *path)
 	font->super.get_glyph = ft_font_get_glyph;
 	font->super.size_char = ft_font_size_char;
 	font->super.size_char_kerning = ft_font_size_char_kerning;
+	font->super.destroy = ft_font_destroy;
 	return &font->super;
 }

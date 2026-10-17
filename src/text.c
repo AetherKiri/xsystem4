@@ -72,6 +72,40 @@ static struct font *load_font(enum font_face type)
 }
 
 static bool font_initialized = false;
+static struct fnl *loaded_fnl;
+
+static void destroy_glyph(void *value)
+{
+	struct glyph *glyph = value;
+	if (!glyph) return;
+	for (int i = 0; i < NR_FONT_WEIGHTS; i++) gfx_delete_texture(&glyph->t[i]);
+	free(glyph);
+}
+
+void gfx_font_size_fini(struct font_size *size)
+{
+	if (!size->glyph_table) return;
+	ht_foreach_value(size->glyph_table, destroy_glyph);
+	ht_free_int(size->glyph_table);
+	size->glyph_table = NULL;
+}
+
+void gfx_font_fini(void)
+{
+	for (int i = 0; i < 2; i++) {
+		if (font_ttf[i]) font_ttf[i]->destroy(font_ttf[i]);
+		font_ttf[i] = NULL;
+	}
+	for (int i = 0; i < MAX_FNL_FONTS; i++) {
+		if (font_fnl[i]) font_fnl[i]->destroy(font_fnl[i]);
+		font_fnl[i] = NULL;
+	}
+	if (loaded_fnl) fnl_free(loaded_fnl);
+	loaded_fnl = NULL;
+	ft_font_fini();
+	font_initialized = false;
+	gfx_text_advance_edges = false;
+}
 
 void gfx_font_init(void)
 {
@@ -83,6 +117,7 @@ void gfx_font_init(void)
 
 	if (config.fnl_path) {
 		struct fnl *fnl = fnl_open(config.fnl_path);
+		loaded_fnl = fnl;
 		if (!fnl)
 			ERROR("Failed to load .fnl font library '%s'", config.fnl_path);
 		if (!fnl->nr_fonts)

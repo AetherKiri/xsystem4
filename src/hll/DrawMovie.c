@@ -90,6 +90,7 @@ static void DrawMovie2_UpdateVolume(void)
 HLL_QUIET_UNIMPLEMENTED(, void, DrawMovie3, UpdateVolume, bool IsMuteByInactiveWindow);
 
 HLL_LIBRARY(DrawMovie,
+	    HLL_EXPORT(_ModuleFini, DrawMovie_Release),
 	    HLL_EXPORT(Release, DrawMovie_Release),
 	    HLL_EXPORT(Load, DrawMovie_Load),
 	    HLL_EXPORT(Run, DrawMovie_Run),
@@ -100,6 +101,7 @@ HLL_LIBRARY(DrawMovie,
 	);
 
 HLL_LIBRARY(DrawMovie2,
+	    HLL_EXPORT(_ModuleFini, DrawMovie_Release),
 	    HLL_EXPORT(Release, DrawMovie_Release),
 	    HLL_EXPORT(Load, DrawMovie_Load),
 	    HLL_EXPORT(Run, DrawMovie_Run),
@@ -112,6 +114,7 @@ HLL_LIBRARY(DrawMovie2,
 	);
 
 HLL_LIBRARY(DrawMovie3,
+	    HLL_EXPORT(_ModuleFini, DrawMovie_Release),
 	    HLL_EXPORT(Release, DrawMovie_Release),
 	    HLL_EXPORT(Load, DrawMovie_Load),
 	    HLL_EXPORT(Run, DrawMovie_Run),

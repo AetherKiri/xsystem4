@@ -105,10 +105,12 @@ static int MsgSkip_Init(struct string *name)
 		}
 		free(data);
 	}
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && !defined(XSYSTEM4_EMBEDDED)
 	SDL_AddEventWatch(msgskip_event_handler, NULL);
 #endif
+#ifndef XSYSTEM4_EMBEDDED
 	atexit(msgskip_save);
+#endif
 	return 1;
 }
 
@@ -161,7 +163,19 @@ static void MsgSkip_PreLink(void)
 	}
 }
 
+static void MsgSkip_ModuleFini(void)
+{
+#ifdef XSYSTEM4_EMBEDDED
+	if (flags) msgskip_save();
+	free(flags); flags = NULL;
+	free(save_path); save_path = NULL;
+	nr_flags = state = 0;
+	enabled = false;
+#endif
+}
+
 HLL_LIBRARY(MsgSkip,
+	    HLL_EXPORT(_ModuleFini, MsgSkip_ModuleFini),
 	    HLL_EXPORT(_PreLink, MsgSkip_PreLink),
 	    HLL_EXPORT(Init, MsgSkip_Init),
 	    HLL_EXPORT(UseFlag, MsgSkip_UseFlag),
@@ -202,6 +216,7 @@ static int vmMsgSkip_Query(possibly_unused int handle, int msgnum)
 }
 
 HLL_LIBRARY(vmMsgSkip,
+	    HLL_EXPORT(_ModuleFini, MsgSkip_ModuleFini),
 	    HLL_EXPORT(Init, vmMsgSkip_Init),
 	    HLL_EXPORT(EnumHandle, vmMsgSkip_EnumHandle),
 	    HLL_EXPORT(Open, vmMsgSkip_Open),

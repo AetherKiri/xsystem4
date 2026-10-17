@@ -97,6 +97,30 @@ static struct mixer *mixers = NULL;
 static int nr_mixers = 0;
 
 static SDL_AudioDeviceID audio_device = 0;
+static bool embedded_audio_initialized;
+
+void mixer_fini(void)
+{
+	if (audio_device) SDL_CloseAudioDevice(audio_device);
+	audio_device = 0;
+	for (int i = 0; i < nr_mixers; i++) {
+		free(mixers[i].name);
+		free(mixers[i].children);
+	}
+	free(mixers);
+	mixers = NULL;
+	master = NULL;
+	nr_mixers = 0;
+#ifdef XSYSTEM4_EMBEDDED
+	if (embedded_audio_initialized) SDL_QuitSubSystem(SDL_INIT_AUDIO);
+#endif
+	embedded_audio_initialized = false;
+}
+
+void xsystem4_audio_pause(bool paused)
+{
+	if (audio_device) SDL_PauseAudioDevice(audio_device, paused);
+}
 
 /*
  * The SDL2 audio callback.
@@ -615,6 +639,15 @@ void channel_close(struct channel *ch)
 
 void mixer_init(void)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	SDL_SetMainReady();
+#ifdef __ANDROID__
+	// Aether owns the Activity; SDL's Java AudioTrack driver requires SDLActivity.
+	SDL_SetHintWithPriority(SDL_HINT_AUDIODRIVER, "openslES", SDL_HINT_OVERRIDE);
+#endif
+	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) ERROR("SDL audio: %s", SDL_GetError());
+	embedded_audio_initialized = true;
+#endif
 	// initialize mixer naming
 	if (!config.mixer_nr_channels) {
 		nr_mixers = 3;

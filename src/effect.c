@@ -179,6 +179,20 @@ static struct effect_shader *effect_shaders[NR_EFFECTS] = {
 	[EFFECT_VWAVE_CROSSFADE] = &vwave_crossfade_shader,
 };
 
+void effect_renderer_fini(void)
+{
+	gfx_reset_view();
+	gfx_delete_texture(&effect.old);
+	gfx_delete_texture(&effect.view);
+	effect.on = false;
+	effect.type = 0;
+	for (int i = 0; i < NR_EFFECTS; i++) {
+		if (!effect_shaders[i]) continue;
+		glDeleteProgram(effect_shaders[i]->s.program);
+		effect_shaders[i]->s.program = 0;
+	}
+}
+
 static void effect_fadeout(Texture *dst, Texture *old, Texture *new, float rate)
 {
 	gfx_copy_bright(dst, 0, 0, old, 0, 0, old->w, old->h, (1.0f - rate) * 255);

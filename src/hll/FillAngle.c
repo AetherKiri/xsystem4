@@ -80,6 +80,13 @@ static bool FillAngle_FillAngleAMAP(int sprite, int center_x, int center_y, int 
 	return true;
 }
 
+static void FillAngle_ModuleFini(void)
+{
+	glDeleteProgram(shader.s.program);
+	shader = (struct fill_angele_shader){0};
+}
+
 HLL_LIBRARY(FillAngle,
+	    HLL_EXPORT(_ModuleFini, FillAngle_ModuleFini),
 	    HLL_EXPORT(FillAngleAMAP, FillAngle_FillAngleAMAP)
 	    );

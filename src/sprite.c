@@ -83,6 +83,12 @@ static struct sprite_shader {
 	GLuint top_right;
 } sprite_shader = {0};
 
+void sprite_renderer_fini(void)
+{
+	glDeleteProgram(sprite_shader.s.program);
+	sprite_shader = (struct sprite_shader){0};
+}
+
 static void prepare_sact_shader(struct gfx_render_job *job, void *data)
 {
 	struct sprite_shader *s = (struct sprite_shader*)job->shader;

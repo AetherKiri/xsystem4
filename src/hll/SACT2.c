@@ -146,6 +146,22 @@ void sact_ModuleFini(void)
 {
 	sact_SP_DeleteAll();
 	audio_reset();
+#ifdef XSYSTEM4_EMBEDDED
+	if (sprites) {
+		// The reserved main sprite was allocated before the table was shifted;
+		// its number is 0, so it cannot go through sact_free_sprite's lookup.
+		if (sprites[-1]) {
+			// The texture belongs to gfx_main_surface, including across vm_reset.
+			sprites[-1]->texture = (Texture){0};
+			sprite_free(sprites[-1]);
+			free(sprites[-1]);
+		}
+		free(sprites - 1);
+	}
+	sprites = NULL;
+	nr_sprites = 0;
+	engine_type = UNINITIALIZED_SPRITE_ENGINE;
+#endif
 }
 
 //int SACT2_Error(struct string *err);

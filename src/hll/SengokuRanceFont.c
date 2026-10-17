@@ -599,8 +599,25 @@ static void SengokuRanceFont_ModuleInit(void)
 	current_text_properties = default_text_properties;
 }
 
+static void SengokuRanceFont_ModuleFini(void)
+{
+	if (sr_tp_table) {
+		ht_foreach_value(sr_tp_table, free);
+		ht_free_int(sr_tp_table);
+		sr_tp_table = NULL;
+	}
+	while (sr_fallback_sizes) {
+		struct sr_fallback_font_size *size = sr_fallback_sizes;
+		sr_fallback_sizes = size->next;
+		gfx_font_size_fini(&size->super);
+		free(size);
+	}
+	current_text_properties = default_text_properties;
+}
+
 HLL_LIBRARY(SengokuRanceFont,
 	    HLL_EXPORT(_ModuleInit, SengokuRanceFont_ModuleInit),
+	    HLL_EXPORT(_ModuleFini, SengokuRanceFont_ModuleFini),
 	    //HLL_EXPORT(AlphaComposite, SengokuRanceFont_AlphaComposite),
 	    HLL_EXPORT(SetFontType, SengokuRanceFont_SetFontType),
 	    HLL_EXPORT(SetFontSize, SengokuRanceFont_SetFontSize),

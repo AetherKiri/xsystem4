@@ -767,6 +767,15 @@ static void link_libraries(void)
 
 bool libraries_initialized = false;
 
+#ifdef XSYSTEM4_EMBEDDED
+struct replaced_hll_function {
+	struct static_hll_function *function;
+	void *original;
+	struct replaced_hll_function *next;
+};
+static struct replaced_hll_function *replaced_functions;
+#endif
+
 void init_libraries(void)
 {
 	library_run_all("_PreLink");
@@ -777,14 +786,44 @@ void init_libraries(void)
 
 void exit_libraries(void)
 {
-	if (libraries_initialized)
+	if (libraries_initialized) {
+		libraries_initialized = false;
 		library_run_all("_ModuleFini");
+	}
+}
+
+void xsystem4_libraries_destroy(void)
+{
+	if (libraries && ain) {
+		for (int i = 0; i < ain->nr_libraries; i++) {
+			if (!libraries[i]) continue;
+			for (int j = 0; j < ain->libraries[i].nr_functions; j++)
+				free(libraries[i][j].args);
+			free(libraries[i]);
+		}
+	}
+	free(libraries);
+	libraries = NULL;
+	libraries_initialized = false;
+#ifdef XSYSTEM4_EMBEDDED
+	while (replaced_functions) {
+		struct replaced_hll_function *entry = replaced_functions;
+		replaced_functions = entry->next;
+		entry->function->fun = entry->original;
+		free(entry);
+	}
+#endif
 }
 
 void static_library_replace(struct static_library *lib, const char *name, void *fun)
 {
 	for (int i = 0; lib->functions[i].name; i++) {
 		if (!strcmp(lib->functions[i].name, name)) {
+#ifdef XSYSTEM4_EMBEDDED
+			struct replaced_hll_function *entry = xmalloc(sizeof(*entry));
+			*entry = (struct replaced_hll_function){ &lib->functions[i], lib->functions[i].fun, replaced_functions };
+			replaced_functions = entry;
+#endif
 			lib->functions[i].fun = fun;
 			return;
 		}

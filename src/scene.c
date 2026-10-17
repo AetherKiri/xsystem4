@@ -37,6 +37,14 @@ static TAILQ_HEAD(listhead, sprite) sprite_list = TAILQ_HEAD_INITIALIZER(sprite_
 
 static Texture wp = {0};
 
+void scene_reset(void)
+{
+	gfx_delete_texture(&wp);
+	TAILQ_INIT(&sprite_list);
+	id_counter = 0;
+	scene_is_dirty = true;
+}
+
 void scene_register_sprite(struct sprite *sp)
 {
 	if (sp->in_scene)

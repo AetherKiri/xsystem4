@@ -71,6 +71,7 @@ static void PlayMovie_Release(void)
 }
 
 HLL_LIBRARY(PlayMovie,
+	    HLL_EXPORT(_ModuleFini, PlayMovie_Release),
 	    HLL_EXPORT(Init, PlayMovie_Init),
 	    HLL_EXPORT(Load, PlayMovie_Load),
 	    HLL_EXPORT(Play, PlayMovie_Play),

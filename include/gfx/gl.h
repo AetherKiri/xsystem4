@@ -18,7 +18,13 @@
 #define SYSTEM4_GFX_GL_H
 
 #ifdef USE_GLES
+#if defined(__APPLE__)
+#include <OpenGLES/ES3/gl.h>
+#else
 #include <GLES3/gl3.h>
+#endif
+#elif defined(__APPLE__) && defined(XSYSTEM4_EMBEDDED)
+#include <OpenGL/gl3.h>
 #else
 #include <GL/glew.h>
 #endif

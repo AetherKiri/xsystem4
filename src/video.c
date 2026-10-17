@@ -31,6 +31,9 @@
 #include "gfx/private.h"
 #include "icon.h"
 #include "xsystem4.h"
+#ifdef XSYSTEM4_EMBEDDED
+#include "embedded.h"
+#endif
 
 struct sdl_private sdl;
 
@@ -74,6 +77,12 @@ static bool wait_vsync = false;
 
 static GLchar *read_shader_file(const char *path)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	const char *source = xsystem4_host_shader(path);
+	if (!source)
+		ERROR("Missing embedded shader: %s", path);
+	return SDL_strdup(source);
+#else
 	GLchar *source = SDL_LoadFile(path, NULL);
 	if (!source) {
 		char full_path[PATH_MAX];
@@ -83,6 +92,7 @@ static GLchar *read_shader_file(const char *path)
 			ERROR("Failed to load shader file %s", full_path, strerror(errno));
 	}
 	return source;
+#endif
 }
 
 GLuint gfx_load_shader_file(const char *path, GLenum type, const char *defines)
@@ -226,6 +236,11 @@ int gfx_init(void)
 	if (gfx_initialized)
 		return true;
 
+#ifdef XSYSTEM4_EMBEDDED
+	if (!xsystem4_host_init_graphics(config.view_width, config.view_height))
+		ERROR("Host graphics context could not be initialized");
+	sdl.format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
+#else
 	uint32_t flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO;
 	if (config.joypad)
 		flags |= SDL_INIT_GAMECONTROLLER;
@@ -266,23 +281,50 @@ int gfx_init(void)
 #endif
 
 	SDL_GL_SetSwapInterval(wait_vsync ? 1 : 0);
+#endif
 	gl_initialize();
 	gfx_draw_init();
 	gfx_set_window_logical_size(config.view_width, config.view_height);
+#ifndef XSYSTEM4_EMBEDDED
 	init_window_size();
 	atexit(gfx_fini);
+#endif
 	gfx_clear();
+#ifndef XSYSTEM4_EMBEDDED
 	icon_init();
+#endif
 	gfx_initialized = true;
 	return 0;
 }
 
 void gfx_fini(void)
 {
+	if (!gfx_initialized)
+		return;
+	void effect_renderer_fini(void);
+	void sprite_renderer_fini(void);
+	void scene_reset(void);
+	effect_renderer_fini();
+	sprite_renderer_fini();
+	scene_reset();
+	glDeleteFramebuffers(1, &main_surface_fb);
+	gfx_delete_texture(&main_surface);
 	glDeleteProgram(default_shader.program);
+#ifndef XSYSTEM4_EMBEDDED
 	SDL_DestroyWindow(sdl.window);
+#endif
 	SDL_FreeFormat(sdl.format);
+#ifndef XSYSTEM4_EMBEDDED
 	SDL_Quit();
+#endif
+	sdl = (struct sdl_private){0};
+	main_surface = (struct texture){0};
+	main_surface_fb = 0;
+	view = &main_surface;
+	default_shader = (struct shader){0};
+	clear_color = (SDL_Color){0, 0, 0, 255};
+	gfx_set_view_offset(0, 0);
+	gfx_initialized = false;
 }
 
 Texture *gfx_main_surface(void)
@@ -311,6 +353,10 @@ static void main_surface_init(int w, int h)
 
 void gfx_set_window_logical_size(int w, int h)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	if (!xsystem4_host_init_graphics(w, h))
+		ERROR("Host framebuffer could not be resized");
+#endif
 	sdl.w = w;
 	sdl.h = h;
 	world_view_transform[0][0] = 2.0 / w;
@@ -321,17 +367,25 @@ void gfx_set_window_logical_size(int w, int h)
 
 bool gfx_set_fullscreen(bool enable)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	return false;
+#else
 	uint32_t flags = enable ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0;
 	if (SDL_SetWindowFullscreen(sdl.window, flags) < 0) {
 		WARNING("Failed to set fullscreen mode: %s", SDL_GetError());
 		return false;
 	}
 	return true;
+#endif
 }
 
 bool gfx_is_fullscreen(void)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	return false;
+#else
 	return SDL_GetWindowFlags(sdl.window) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+#endif
 }
 
 void gfx_toggle_fullscreen(void)
@@ -341,6 +395,10 @@ void gfx_toggle_fullscreen(void)
 
 void gfx_update_screen_scale(void)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	sdl.viewport = (SDL_Rect){0, 0, sdl.w, sdl.h};
+	return;
+#endif
 	int display_w, display_h;
 	SDL_GL_GetDrawableSize(sdl.window, &display_w, &display_h);
 
@@ -373,8 +431,10 @@ void gfx_update_screen_scale(void)
 void gfx_set_wait_vsync(bool wait)
 {
 	wait_vsync = wait;
+#ifndef XSYSTEM4_EMBEDDED
 	if (gfx_initialized)
 		SDL_GL_SetSwapInterval(wait ? 1 : 0);
+#endif
 }
 
 void gfx_set_clear_color(int r, int g, int b, int a)
@@ -423,7 +483,11 @@ static void gfx_update_frame_rate_counter(void)
 
 void gfx_swap(void)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	glBindFramebuffer(GL_FRAMEBUFFER, xsystem4_host_framebuffer());
+#else
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
 	glViewport(sdl.viewport.x, sdl.viewport.y, sdl.viewport.w, sdl.viewport.h);
 	gfx_clear();
 
@@ -442,7 +506,11 @@ void gfx_swap(void)
 	};
 	gfx_render(&job);
 
+#ifdef XSYSTEM4_EMBEDDED
+	xsystem4_host_present(sdl.w, sdl.h);
+#else
 	SDL_GL_SwapWindow(sdl.window);
+#endif
 	glBindFramebuffer(GL_FRAMEBUFFER, main_surface_fb);
 	glViewport(0, 0, sdl.w, sdl.h);
 

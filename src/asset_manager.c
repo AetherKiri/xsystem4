@@ -79,6 +79,23 @@ struct asset_manager_afa {
 
 static struct asset_manager *assets[ASSET_TYPE_MAX] = {0};
 
+void asset_manager_fini(void)
+{
+	for (int i = 0; i < ASSET_TYPE_MAX; i++) {
+		if (!assets[i]) continue;
+		if (assets[i]->load_archive) {
+			struct asset_manager_afa *manager = (void*)assets[i];
+			for (int j = 0; j < MAX_ARCHIVES; j++)
+				if (manager->archives[j]) archive_free(&manager->archives[j]->ar);
+		} else {
+			struct asset_manager_ald *manager = (void*)assets[i];
+			if (manager->archive) archive_free(manager->archive);
+		}
+		free(assets[i]);
+		assets[i] = NULL;
+	}
+}
+
 bool asset_manager_load_archive(enum asset_type type, const char *archive_name)
 {
 	if (!assets[type])

@@ -31,6 +31,8 @@
 
 static struct id_pool wav;
 static struct id_pool bgm;
+static bool audio_initialized = false;
+void mixer_fini(void);
 
 // Anonymous channels for playing sounds in-engine. audio_update must be called
 // periodically to clean up channels that have finished playing.
@@ -39,7 +41,6 @@ static int anonymous_channels[NR_ANONYMOUS_CHANNELS];
 
 void audio_init(void)
 {
-	static bool audio_initialized = false;
 	if (audio_initialized)
 		return;
 
@@ -56,6 +57,7 @@ void audio_init(void)
 
 void audio_reset(void)
 {
+	if (!audio_initialized) return;
 	for (int i = id_pool_get_first(&wav); i >= 0; i = id_pool_get_next(&wav, i)) {
 		wav_unprepare(i);
 	}
@@ -65,6 +67,15 @@ void audio_reset(void)
 	for (int i = 0; i < NR_ANONYMOUS_CHANNELS; i++) {
 		anonymous_channels[i] = -1;
 	}
+}
+
+void audio_fini(void)
+{
+	audio_reset();
+	mixer_fini();
+	id_pool_delete(&wav);
+	id_pool_delete(&bgm);
+	audio_initialized = false;
 }
 
 void audio_update(void)

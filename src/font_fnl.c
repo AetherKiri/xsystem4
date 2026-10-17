@@ -197,6 +197,24 @@ static float fnl_font_size_char_kerning(struct font_size *size, uint32_t code,
 	return fnl_font_size_char(size, code);
 }
 
+static void fnl_font_destroy(struct font *value)
+{
+	struct font_fnl *font = (void*)value;
+	for (unsigned i = 0; i < font->nr_sizes; i++) gfx_font_size_fini(&font->sizes[i].super);
+	for (unsigned i = 0; i < font->nr_bitmap_sizes; i++) {
+		struct fnl_bitmap_size *size = &font->bitmap_sizes[i];
+		for (unsigned j = 0; j < size->nr_glyphs; j++) {
+			if (!size->glyphs[j]) continue;
+			free(size->glyphs[j]->pixels);
+			free(size->glyphs[j]);
+		}
+		free(size->glyphs);
+	}
+	free(font->sizes);
+	free(font->bitmap_sizes);
+	free(font);
+}
+
 struct font *fnl_font_load(struct fnl *lib, unsigned index)
 {
 	if (index >= lib->nr_fonts)
@@ -236,6 +254,7 @@ struct font *fnl_font_load(struct fnl *lib, unsigned index)
 	font->super.get_glyph = fnl_font_get_glyph;
 	font->super.size_char = fnl_font_size_char;
 	font->super.size_char_kerning = fnl_font_size_char_kerning;
+	font->super.destroy = fnl_font_destroy;
 
 	if (!game_rance7_mg)
 		gfx_text_advance_edges = true;

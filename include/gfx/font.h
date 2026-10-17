@@ -69,6 +69,7 @@ struct font {
 	bool (*get_glyph)(struct font_size *size, struct glyph *dst, uint32_t code, enum font_weight weight);
 	float (*size_char)(struct font_size *size, uint32_t code);
 	float (*size_char_kerning)(struct font_size *size, uint32_t code, uint32_t code_next);
+	void (*destroy)(struct font *font);
 };
 
 struct text_style {
@@ -132,7 +133,10 @@ static inline void text_style_set_edge_width(struct text_style *ts, float w)
 extern bool gfx_text_advance_edges;
 
 void gfx_font_init(void);
+void gfx_font_fini(void);
+void gfx_font_size_fini(struct font_size *size);
 void ft_font_init(void);
+void ft_font_fini(void);
 struct font *ft_font_load(const char *path);
 struct font *fnl_font_load(struct fnl *lib, unsigned index);
 

@@ -25,6 +25,10 @@
 #include "scene.h"
 #include "vm.h"
 #include "xsystem4.h"
+#ifdef XSYSTEM4_EMBEDDED
+#include "embedded.h"
+#define SDL_PollEvent xsystem4_host_poll_event
+#endif
 #include "debugger.h"
 
 #ifndef M_PI
@@ -224,18 +228,26 @@ void key_clear_flag(bool no_ctrl)
 
 void mouse_get_pos(int *x, int *y)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	xsystem4_host_mouse_position(x, y, 0);
+#else
 	int wx, wy;
 	SDL_PumpEvents();
 	SDL_GetMouseState(&wx, &wy);
 	*x = (wx - sdl.viewport.x) * sdl.w / sdl.viewport.w;
 	*y = (wy - sdl.viewport.y) * sdl.h / sdl.viewport.h;
+#endif
 }
 
 void mouse_set_pos(int x, int y)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	xsystem4_host_mouse_position(&x, &y, 1);
+#else
 	int wx = x * sdl.viewport.w / sdl.w + sdl.viewport.x;
 	int wy = y * sdl.viewport.h / sdl.h + sdl.viewport.y;
 	SDL_WarpMouseInWindow(sdl.window, wx, wy);
+#endif
 }
 
 static int wheel_dir = 0;
@@ -765,4 +777,28 @@ void handle_events(void)
 	}
 	if (dbg_dap)
 		dbg_dap_handle_messages();
+}
+
+
+void input_reset(void)
+{
+	memset(key_state, 0, sizeof(key_state));
+	memset(joybutton_state, 0, sizeof(joybutton_state));
+	memset(joyaxis_state, 0, sizeof(joyaxis_state));
+	wheel_dir = 0;
+	input_handler = NULL;
+	editing_handler = NULL;
+	key_handler = NULL;
+	deferred_synthetic_mouse_event.timestamp = 0;
+	long_touch_start_timestamp = 0;
+	mouse_focus = keyboard_focus = true;
+	scroll_gesture_y = 0;
+#ifdef __ANDROID__
+	while (!STAILQ_EMPTY(&deferred_keyevent_queue)) {
+		struct deferred_keyevent *event = STAILQ_FIRST(&deferred_keyevent_queue);
+		STAILQ_REMOVE_HEAD(&deferred_keyevent_queue, entry);
+		free(event);
+	}
+	last_keyevent_timestamp = 0;
+#endif
 }

@@ -26,6 +26,9 @@
 #include "gfx/gfx.h"
 #include "hll.h"
 #include "input.h"
+#ifdef XSYSTEM4_EMBEDDED
+#include "embedded.h"
+#endif
 
 static int font_size;
 static int font_weight;
@@ -107,12 +110,20 @@ static void InputString_OpenIME(void)
 	register_editing_handler(handle_editing);
 	register_key_handler(handle_key);
 	has_editing_text = false;
+#ifdef XSYSTEM4_EMBEDDED
+	xsystem4_host_text_input(1);
+#else
 	SDL_StartTextInput();
+#endif
 }
 
 static void InputString_CloseIME(void)
 {
+#ifdef XSYSTEM4_EMBEDDED
+	xsystem4_host_text_input(0);
+#else
 	SDL_StopTextInput();
+#endif
 	has_editing_text = false;
 	clear_input_handler();
 	clear_editing_handler();
@@ -141,7 +152,15 @@ static void InputString_PreLink(void)
 	}
 }
 
+static void InputString_ModuleFini(void)
+{
+	InputString_CloseIME();
+	if (result) free_string(result);
+	result = NULL;
+}
+
 HLL_LIBRARY(InputString,
+	    HLL_EXPORT(_ModuleFini, InputString_ModuleFini),
 	    HLL_EXPORT(_PreLink, InputString_PreLink),
 	    HLL_EXPORT(SetFont, InputString_SetFont),
 	    HLL_EXPORT(SetPos, InputString_SetPos),
