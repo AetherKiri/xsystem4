@@ -312,14 +312,16 @@ static unsigned scene_last = 0;
 
 static int scene_struct_no(void)
 {
-	static int no = -1;
-	if (no < 0) {
-		char *s = utf2sjis("画面保管_t", 0);
-		no = ain_get_struct(ain, s);
-		free(s);
-		if (no < 0)
-			VM_ERROR("Missing definition for struct 画面保管_t");
-	}
+	// Translated text may use GBK while VM identifiers remain Shift-JIS.
+	// Look up 画面保管_t in the selected encoding, then the original encoding.
+	char sjis_name[] = "\x89\xe6\x96\xca\x95\xdb\x8a\xc7_t";
+	char gbk_name[] = "\xbb\xad\xc3\xe6\xb1\xa3\xb9\xdc_t";
+	int no = ain_get_struct(ain, use_gbk ? gbk_name : sjis_name);
+	if (no < 0 && use_gbk)
+		no = ain_get_struct(ain, sjis_name);
+	// Do not cache the index across different games in an embedded host.
+	if (no < 0)
+		VM_ERROR("Missing definition for struct 画面保管_t");
 	return no;
 }
 
