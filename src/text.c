@@ -137,6 +137,10 @@ static struct font *get_font(unsigned face)
 			WARNING("Invalid fnl face: %u", face);
 			return font_ttf[0];
 		}
+		// FNL's glyph index is Shift-JIS-only. GBK translations need the
+		// Unicode font so Chinese glyphs do not silently become empty spaces.
+		if (use_gbk)
+			return font_ttf[FONT_GOTHIC];
 		return font_fnl[face];
 	}
 	if (face > 1)

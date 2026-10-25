@@ -317,4 +317,9 @@ void apply_game_specific_hacks(struct ain *ain)
 	// XXX: we don't rely on game_name because mods change it
 	if (ain_get_library(ain, "SengokuRanceFont") >= 0)
 		game_rance7_mg = true;
+	// Translations can replace GameName while retaining Rance Quest's numeric
+	// string CG interface. TapirEngine identifies that interface independently
+	// of the displayed title, without enabling the English text workaround.
+	if (ain_get_library(ain, "TapirEngine") >= 0)
+		game_rance8 = true;
 }
