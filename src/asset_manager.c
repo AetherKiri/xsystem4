@@ -21,6 +21,7 @@
 #include <dirent.h>
 #include <limits.h>
 #include <assert.h>
+#include <sys/stat.h>
 
 #include "system4.h"
 #include "system4/ald.h"
@@ -335,6 +336,69 @@ static char *get_base_name(const char *ain_filename)
 	return path;
 }
 
+static size_t archive_base_length(const char *name)
+{
+	size_t len = strlen(name);
+	if (len > 6 && !strcasecmp(name + len - 4, ".ald") &&
+			strchr("bBgGwWdD", name[len - 6]) &&
+			toupper((unsigned char)name[len - 5]) >= 'A' &&
+			toupper((unsigned char)name[len - 5]) <= 'Z')
+		return len - 6;
+	const char *suffixes[] = {
+		"BA.afa", "WA.afa", "Sound.afa", "Voice.afa",
+		"CG.afa", "Flat.afa", "Pact.afa", "AFF.afa"
+	};
+	for (size_t i = 0; i < sizeof(suffixes) / sizeof(*suffixes); i++) {
+		size_t suffix_len = strlen(suffixes[i]);
+		if (len > suffix_len && !strcasecmp(name + len - suffix_len, suffixes[i]))
+			return len - suffix_len;
+	}
+	return 0;
+}
+
+static char *get_asset_base_name(void)
+{
+	char *base = get_base_name(config.ain_filename);
+	UDIR *dir = opendir_utf8(config.game_dir);
+	if (!dir)
+		return base;
+
+	// Translations can rename the AIN while retaining the original archives.
+	// Keep an exact script match; otherwise accept only one archive family.
+	char *candidate = NULL;
+	bool matched = false, ambiguous = false;
+	char *name;
+	while ((name = readdir_utf8(dir))) {
+		size_t len = archive_base_length(name);
+		if (len) {
+			char *path = path_join(config.game_dir, name);
+			ustat st;
+			bool regular = !stat_utf8(path, &st) && S_ISREG(st.st_mode);
+			free(path);
+			if (regular) {
+				matched |= strlen(base) == len && !strncasecmp(base, name, len);
+				if (!candidate)
+					candidate = strndup(name, len);
+				else if (strlen(candidate) != len || strncasecmp(candidate, name, len))
+					ambiguous = true;
+			}
+		}
+		free(name);
+	}
+	closedir_utf8(dir);
+	if (!matched && candidate && !ambiguous) {
+		WARNING("No archives match script %s; using resource family %s",
+				display_sjis0(config.ain_filename), display_utf0(candidate));
+		free(base);
+		return candidate;
+	}
+	if (!matched && ambiguous)
+		WARNING("No archives match script %s and multiple resource families exist",
+				display_sjis0(config.ain_filename));
+	free(candidate);
+	return base;
+}
+
 void asset_manager_init(void)
 {
 	char *ald_filenames[ASSET_TYPE_MAX][ALD_FILEMAX] = {0};
@@ -348,7 +412,7 @@ void asset_manager_init(void)
 		ERROR("Failed to open directory: %s", display_utf0(config.game_dir));
 	}
 
-	char *base = get_base_name(config.ain_filename);
+	char *base = get_asset_base_name();
 	size_t base_len = strlen(base);
 
 	// get ALD filenames
@@ -360,6 +424,8 @@ void asset_manager_init(void)
 		if (!ext)
 			goto loop_next;
 		if (!strcasecmp(ext, "ald")) {
+			if (strlen(d_name) != base_len + 6)
+				goto loop_next;
 			int dno = toupper(d_name[base_len+1]) - 'A';
 			if (dno < 0 || dno >= ALD_FILEMAX) {
 				WARNING("Invalid ALD index: %s", display_utf0(d_name));
@@ -411,19 +477,19 @@ void asset_manager_init(void)
 			config.ex_path = path_join(config.game_dir, d_name);
 		} else if (!strcasecmp(ext, "afa")) {
 			const char *type = d_name + base_len;
-			if (!strcmp(type, "BA.afa")) {
+			if (!strcasecmp(type, "BA.afa")) {
 				afa_filenames[ASSET_BGM] = path_join(config.game_dir, d_name);
-			} else if (!strcmp(type, "WA.afa") || !strcmp(type, "Sound.afa")) {
+			} else if (!strcasecmp(type, "WA.afa") || !strcasecmp(type, "Sound.afa")) {
 				afa_filenames[ASSET_SOUND] = path_join(config.game_dir, d_name);
-			} else if (!strcmp(type, "Voice.afa")) {
+			} else if (!strcasecmp(type, "Voice.afa")) {
 				afa_filenames[ASSET_VOICE] = path_join(config.game_dir, d_name);
-			} else if (!strcmp(type, "CG.afa")) {
+			} else if (!strcasecmp(type, "CG.afa")) {
 				afa_filenames[ASSET_CG] = path_join(config.game_dir, d_name);
-			} else if (!strcmp(type, "Flat.afa")) {
+			} else if (!strcasecmp(type, "Flat.afa")) {
 				afa_filenames[ASSET_FLAT] = path_join(config.game_dir, d_name);
-			} else if (!strcmp(type, "Pact.afa")) {
+			} else if (!strcasecmp(type, "Pact.afa")) {
 				afa_filenames[ASSET_PACT] = path_join(config.game_dir, d_name);
-			} else if (!strcmp(type, "AFF.afa")) {
+			} else if (!strcasecmp(type, "AFF.afa")) {
 				afa_filenames[ASSET_FLASH] = path_join(config.game_dir, d_name);
 			}
 		} else if (!strcasecmp(ext, "fnl")) {
