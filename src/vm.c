@@ -525,7 +525,11 @@ static void system_call(enum syscall_code code)
 {
 	switch (code) {
 	case SYS_EXIT: {// system.Exit(int nResult)
-		vm_exit(stack_pop().i);
+		int code = stack_pop().i;
+#ifdef XSYSTEM4_EMBEDDED
+		xsystem4_host_game_exit(code);
+#endif
+		vm_exit(code);
 		break;
 	}
 	case SYS_GLOBAL_SAVE: { // system.GlobalSave(string szKeyName, string szFileName)

@@ -23,6 +23,12 @@ static _Thread_local bool vm_running;
 void xsystem4_host_vm_started(void) { vm_running = true; }
 void xsystem4_host_vm_closed(void) { vm_running = false; }
 
+void xsystem4_host_game_exit(int code)
+{
+	if (embedded_host && embedded_host->game_exit)
+		embedded_host->game_exit(embedded_host->user, code);
+}
+
 _Noreturn void xsystem4_host_exit(int code)
 {
 	if (!embedded_host)
@@ -157,6 +163,7 @@ int xsystem4_host_run(const struct xsystem4_host *host, const char *game,
 		apply_game_specific_hacks(ain);
 		asset_manager_init();
 		embedded_exit_code = vm_execute_ain(ain);
+		xsystem4_host_game_exit(embedded_exit_code);
 	}
 	/* Advance before each cleanup: a fatal module finalizer must not recurse. */
 	while (cleanup_stage < 8) {

@@ -21,6 +21,8 @@ struct xsystem4_host {
 	const char *(*shader)(void *user, const char *path);
 	void (*log)(void *user, const char *message);
 	void (*text_input)(void *user, int active);
+	// Normal script completion, including nonzero process exit codes.
+	void (*game_exit)(void *user, int code);
 };
 
 int xsystem4_host_run(const struct xsystem4_host *host, const char *game,
@@ -35,6 +37,7 @@ void xsystem4_host_present(int width, int height);
 void xsystem4_host_text_input(int active);
 void xsystem4_host_vm_started(void);
 void xsystem4_host_vm_closed(void);
+void xsystem4_host_game_exit(int code);
 #ifdef __cplusplus
 [[noreturn]] void xsystem4_host_exit(int code);
 #else
