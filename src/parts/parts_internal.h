@@ -513,6 +513,7 @@ struct string *parts_text_get(struct parts_text *t);
 
 // render.c
 void parts_render_init(void);
+void parts_render_fini(void);
 void parts_render_update(void);
 void parts_engine_dirty(void);
 void parts_engine_clean(void);

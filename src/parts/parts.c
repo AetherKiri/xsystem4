@@ -1067,6 +1067,11 @@ void PE_Reset(void)
 	PE_ReleaseAllParts();
 	PE_ReleaseMessage();
 	ctrl_stack_init();
+	parts_render_fini();
+	if (parts_table)
+		ht_free_int(parts_table);
+	parts_table = NULL;
+	parts_engine_initialized = false;
 	sact_ModuleFini();
 }
 

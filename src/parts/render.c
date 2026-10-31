@@ -697,3 +697,10 @@ void parts_render_init(void)
 	parts_shader.clipper_tex = glGetUniformLocation(parts_shader.shader.program, "clipper_tex");
 	parts_shader.inv_clipper_transform = glGetUniformLocation(parts_shader.shader.program, "inv_clipper_transform");
 }
+
+void parts_render_fini(void)
+{
+	if (parts_shader.shader.program)
+		glDeleteProgram(parts_shader.shader.program);
+	memset(&parts_shader, 0, sizeof(parts_shader));
+}
