@@ -551,12 +551,17 @@ void gfx_prepare_job(struct gfx_render_job *job)
 void gfx_run_job(struct gfx_render_job *job)
 {
 	glBindVertexArray(sdl.gl.vao);
-	glEnableVertexAttribArray(job->shader->vertex_pos);
-	glEnableVertexAttribArray(job->shader->vertex_uv);
-
 	glBindBuffer(GL_ARRAY_BUFFER, job->shape == GFX_QUADRILATERAL ? sdl.gl.quad_vbo : sdl.gl.vbo);
-	glVertexAttribPointer(job->shader->vertex_pos, 4, GL_FLOAT, GL_FALSE, sizeof(struct gfx_vertex), NULL);
-	glVertexAttribPointer(job->shader->vertex_uv, 2, GL_FLOAT, GL_FALSE, sizeof(struct gfx_vertex), (void*)offsetof(struct gfx_vertex, u));
+	// Drivers may optimize unused inputs out, e.g. vertex_uv in the fill
+	// shader. Unlike uniform locations, -1 is not ignored by attribute APIs.
+	if (job->shader->vertex_pos >= 0) {
+		glEnableVertexAttribArray(job->shader->vertex_pos);
+		glVertexAttribPointer(job->shader->vertex_pos, 4, GL_FLOAT, GL_FALSE, sizeof(struct gfx_vertex), NULL);
+	}
+	if (job->shader->vertex_uv >= 0) {
+		glEnableVertexAttribArray(job->shader->vertex_uv);
+		glVertexAttribPointer(job->shader->vertex_uv, 2, GL_FLOAT, GL_FALSE, sizeof(struct gfx_vertex), (void*)offsetof(struct gfx_vertex, u));
+	}
 
 	switch (job->shape) {
 	case GFX_RECTANGLE:
@@ -570,8 +575,10 @@ void gfx_run_job(struct gfx_render_job *job)
 		break;
 	}
 
-	glDisableVertexAttribArray(job->shader->vertex_pos);
-	glDisableVertexAttribArray(job->shader->vertex_uv);
+	if (job->shader->vertex_pos >= 0)
+		glDisableVertexAttribArray(job->shader->vertex_pos);
+	if (job->shader->vertex_uv >= 0)
+		glDisableVertexAttribArray(job->shader->vertex_uv);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
