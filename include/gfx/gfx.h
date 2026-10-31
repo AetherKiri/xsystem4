@@ -47,8 +47,8 @@ typedef struct shader {
 	GLuint world_transform;
 	GLuint view_transform;
 	GLuint texture;
-	GLuint vertex_pos;
-	GLuint vertex_uv;
+	GLint vertex_pos;
+	GLint vertex_uv;
 	void (*prepare)(struct gfx_render_job *, void *);
 } Shader;
 
