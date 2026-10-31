@@ -499,6 +499,7 @@ static void AnteaterADVEngine_ModuleFini(void)
 {
 	ADVLogList_Clear();
 	ADVSceneKeeper_Clear();
+	voice_by_name = false;
 }
 
 static void AnteaterADVEngine_ADVLogList_AddText_with_window(struct string **text, possibly_unused int window_no)
@@ -577,10 +578,11 @@ static void AnteaterADVEngine_PreLink(void)
 	}
 
 	fun = get_fun(libno, "ADVLogList_AddVoice");
-	if (fun && fun->nr_arguments == 1 && fun->arguments[0].type.data == AIN_STRING) {
+	// Embedded hosts can link another game's numeric interface in this process.
+	voice_by_name = fun && fun->nr_arguments == 1 && fun->arguments[0].type.data == AIN_STRING;
+	if (voice_by_name) {
 		static_library_replace(&lib_AnteaterADVEngine, "ADVLogList_AddVoice",
 			AnteaterADVEngine_ADVLogList_AddVoice_by_name);
-		voice_by_name = true;
 	}
 
 	fun = get_fun(libno, "ADVLogList_GetADVLogVoice");
