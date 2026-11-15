@@ -119,8 +119,8 @@ bool PE_SetPartsCGDetectionSize(int parts_no, struct string *cg_name, int state)
 bool PE_Save(struct page **buffer);
 bool PE_SaveWithoutHideParts(struct page **buffer);
 bool PE_Load(struct page **buffer);
-int PE_AddController(int index);
-void PE_RemoveController(struct page **erase_number_list, int index);
+int PE_AddController(int controller_id);
+void PE_RemoveController(struct page **erase_number_list, int controller_id);
 bool PE_CreateParts3DLayerPluginID(int parts_no, int state);
 int PE_GetParts3DLayerPluginID(int parts_no, int state);
 bool PE_ReleaseParts3DLayerPluginID(int parts_no, int state);
@@ -139,9 +139,50 @@ int PE_get_movie_sprite(int parts_no, int state);
 float PE_parts_get_absolute_x(int parts_no);
 float PE_parts_get_absolute_y(int parts_no);
 int PE_parts_get_absolute_z(int parts_no);
+int PE_parts_get_absolute_max_z(int parts_no);
 void PE_parts_set_lock_input_state(int parts_no, bool lock);
 
 // construction.c
+
+enum parts_cp_command_type {
+	PARTS_CP_CMD_CREATE = 0,
+	PARTS_CP_CMD_CREATE_PIXEL_ONLY = 1,
+	PARTS_CP_CMD_CREATE_CG = 2,
+	PARTS_CP_CMD_FILL = 3,
+	PARTS_CP_CMD_FILL_ALPHA_COLOR = 4,
+	PARTS_CP_CMD_FILL_AMAP = 5,
+	PARTS_CP_CMD_FILL_WITH_ALPHA = 6,
+	PARTS_CP_CMD_DRAW_TEXT = 7,
+	PARTS_CP_CMD_COPY_TEXT = 8,
+	PARTS_CP_CMD_FILL_GRADATION_HORIZON = 9,
+	PARTS_CP_CMD_DRAW_RECT = 10,
+	PARTS_CP_CMD_CUT_CG_BLEND = 11,
+	PARTS_CP_CMD_CUT_CG_COPY = 12,
+	PARTS_CP_CMD_CUT_CG_SCALE_BLEND = 13,
+	PARTS_CP_CMD_CUT_CG_SCALE_COPY = 14,
+	PARTS_CP_CMD_GRAY_FILTER = 15,
+	PARTS_CP_CMD_ADD_FILTER = 16,
+	PARTS_CP_CMD_MUL_FILTER = 17,
+	PARTS_CP_CMD_DRAW_LINE = 18,
+};
+
+struct parts_cp_command {
+	enum parts_cp_command_type type;
+	int interp_type;
+	int sx, sy, sw, sh;
+	int dx, dy, dw, dh;
+	int r, g, b, a;
+	int char_space, line_space;
+	int font_type, font_size;
+	int font_r, font_g, font_b;
+	int edge_r, edge_g, edge_b;
+	float bold_weight, edge_weight;
+	bool full_size;
+	struct string *text;
+	struct string *cg_name;
+};
+
+void PE_add_construct_process(int parts_no, int state, const struct parts_cp_command *cmd);
 bool PE_AddCreateToPartsConstructionProcess(int parts_no, int w, int h, int state);
 bool PE_AddCreatePixelOnlyToPartsConstructionProcess(int parts_no, int w, int h, int state);
 bool PE_AddCreateCGToProcess(int parts_no, struct string *cg_name, int state);
@@ -293,6 +334,7 @@ bool PE_StopPartsFlat(int parts_no, int state);
 bool PE_StartPartsFlat(int parts_no, int state);
 bool PE_GoFramePartsFlat(int parts_no, int frame_no, int state);
 int PE_GetPartsFlatEndFrame(int parts_no, int state);
+void PE_SetFlatUpdateSpeedRate(int parts_no, float rate, int state);
 
 // layoutbox.c
 void PE_SetLayoutBoxLayoutType(int parts_no, int type);
@@ -312,5 +354,27 @@ int PE_get_layoutbox_padding_top(int parts_no);
 int PE_get_layoutbox_padding_bottom(int parts_no);
 int PE_get_layoutbox_padding_left(int parts_no);
 int PE_get_layoutbox_padding_right(int parts_no);
+
+// activity.c
+bool PE_ReleaseActivity(struct string *name, struct page **erase_number_list);
+bool PE_activity_read_file(struct string *name, struct string *filename);
+bool PE_activity_is_loaded(struct string *name);
+int PE_activity_numof_parts(struct string *name);
+bool PE_activity_get_parts(struct string *name, int index, struct string **parts_name,
+		int *number);
+bool PE_activity_is_exist_parts_by_name(struct string *name, struct string *parts_name);
+bool PE_activity_is_exist_parts_by_number(struct string *name, int number);
+int PE_activity_get_parts_number(struct string *name, struct string *parts_name);
+void PE_activity_get_parts_name(struct string *name, int number, struct string **parts_name);
+bool PE_activity_is_exist_file(struct string *filename);
+bool PE_activity_is_exist_intent_data(struct string *name, struct string *parts_name);
+int PE_activity_numof_intent_data_destination(struct string *name, struct string *parts_name);
+void PE_activity_get_intent_data_destination(struct string *name, struct string *parts_name,
+		int index, struct string **destination);
+int PE_activity_get_intent_data_type(struct string *name, struct string *parts_name);
+void PE_activity_get_func(struct string *name, struct string *parts_name, int state,
+		struct string *map_id, struct string **function);
+int PE_activity_numof_end_key(struct string *name);
+int PE_activity_get_end_key(struct string *name, int index);
 
 #endif /* SYSTEM4_PARTS_H */

@@ -99,128 +99,47 @@ static void PartsEngine_AddComponentMotionPos(int parts_no, float begin_x, float
 			begin_t, end_t, curve_name);
 }
 
+// Evenicle: return type changed from int to float
+static float PartsEngine_GetLayoutBoxReturnSize_float(int parts_no)
+{
+	return PE_GetLayoutBoxReturnSize(parts_no);
+}
+
 static void PartsEngine_add_construction_process(union vm_value *ints,
 		union vm_value *floats, union vm_value *strings)
 {
-	int parts_no    = ints[0].i;
-	int state       = ints[1].i;
-	int command     = ints[2].i;
-	int interp_type = ints[3].i;
-	int sx          = ints[4].i;
-	int sy          = ints[5].i;
-	int sw          = ints[6].i;
-	int sh          = ints[7].i;
-	int dx          = ints[8].i;
-	int dy          = ints[9].i;
-	int dw          = ints[12].i;
-	int dh          = ints[13].i;
-	int r           = ints[14].i;
-	int g           = ints[15].i;
-	int b           = ints[16].i;
-	int a           = ints[17].i;
-	// int r2       = ints[18].i;
-	// int g2       = ints[19].i;
-	// int b2       = ints[20].i;
-	int char_space  = ints[21].i;
-	int line_space  = ints[22].i;
-	int font_type   = ints[23].i;
-	int font_size   = ints[24].i;
-	int font_r      = ints[25].i;
-	int font_g      = ints[26].i;
-	int font_b      = ints[27].i;
-	int edge_r      = ints[28].i;
-	int edge_g      = ints[29].i;
-	int edge_b      = ints[30].i;
-	int full_size   = ints[31].i;
-	float bold_weight = floats[0].f;
-	float edge_weight = floats[1].f;
-	struct string *text    = heap_get_string(strings[0].i);
-	struct string *cg_name = heap_get_string(strings[1].i);
-
-	switch (command) {
-	case 0:  // CASConstructionProcess::SetCreate
-		PE_AddCreateToPartsConstructionProcess(parts_no, dw, dh, state);
-		break;
-	case 1:  // CASConstructionProcess::SetCreatePixelOnly
-		PE_AddCreatePixelOnlyToPartsConstructionProcess(parts_no, dw, dh, state);
-		break;
-	case 2:  // CASConstructionProcess::SetCreateCG
-		PE_AddCreateCGToProcess(parts_no, cg_name, state);
-		break;
-	case 3:  // CASConstructionProcess::SetFill
-		PE_AddFillToPartsConstructionProcess(parts_no,
-				dx, dy, dw, dh, r, g, b, state);
-		break;
-	case 4:  // CASConstructionProcess::SetFillAlphaColor
-		PE_AddFillAlphaColorToPartsConstructionProcess(parts_no,
-				dx, dy, dw, dh, r, g, b, a, state);
-		break;
-	case 5:  // CASConstructionProcess::SetFillAMap
-		PE_AddFillAMapToPartsConstructionProcess(parts_no,
-				dx, dy, dw, dh, a, state);
-		break;
-	case 6:  // CASConstructionProcess::SetFillWithAlpha
-		PE_AddFillWithAlphaToPartsConstructionProcess(parts_no,
-				dx, dy, dw, dh, r, g, b, a, state);
-		break;
-	case 7:  // CASConstructionProcess::SetDrawText
-		PE_AddDrawTextToPartsConstructionProcess(parts_no,
-				dx, dy, text, font_type, font_size,
-				font_r, font_g, font_b, bold_weight,
-				edge_r, edge_g, edge_b, edge_weight,
-				char_space, line_space, state);
-		break;
-	case 8:  // CASConstructionProcess::SetCopyText
-		PE_AddCopyTextToPartsConstructionProcess(parts_no,
-				dx, dy, text, font_type, font_size,
-				font_r, font_g, font_b, bold_weight,
-				edge_r, edge_g, edge_b, edge_weight,
-				char_space, line_space, state);
-		break;
-	case 9:  // CASConstructionProcess::SetFillGradationHorizon
-		WARNING("AddConstructProcess: FillGradationHorizon unimplemented");
-		break;
-	case 10:  // CASConstructionProcess::SetDrawRect
-		PE_AddDrawRectToPartsConstructionProcess(parts_no,
-				dx, dy, dw, dh, r, g, b, state);
-		break;
-	case 11:  // CASConstructionProcess::SetCutCGBlend (equal scale)
-		PE_AddDrawCutCGToPartsConstructionProcess(parts_no, cg_name,
-				dx, dy, dw, dh, sx, sy, dw, dh,
-				interp_type, state);
-		break;
-	case 12:  // CASConstructionProcess::SetCutCGCopy (equal scale)
-		PE_AddCopyCutCGToPartsConstructionProcess(parts_no, cg_name,
-				dx, dy, dw, dh, sx, sy, dw, dh,
-				interp_type, state);
-		break;
-	case 13:  // CASConstructionProcess::SetCutCGScaleBlend
-		PE_AddDrawCutCGToPartsConstructionProcess(parts_no, cg_name,
-				dx, dy, dw, dh, sx, sy, sw, sh,
-				interp_type, state);
-		break;
-	case 14:  // CASConstructionProcess::SetCutCGScaleCopy
-		PE_AddCopyCutCGToPartsConstructionProcess(parts_no, cg_name,
-				dx, dy, dw, dh, sx, sy, sw, sh,
-				interp_type, state);
-		break;
-	case 15:  // CASConstructionProcess::SetGrayFilter
-		PE_AddGrayFilterToPartsConstructionProcess(parts_no,
-				dx, dy, dw, dh, full_size, state);
-		break;
-	case 16:  // CASConstructionProcess::SetAddFilter
-		WARNING("AddConstructProcess: AddFilter unimplemented");
-		break;
-	case 17:  // CASConstructionProcess::SetMulFilter
-		WARNING("AddConstructProcess: MulFilter unimplemented");
-		break;
-	case 18:  // CASConstructionProcess::SetDrawLine
-		WARNING("AddConstructProcess: DrawLine unimplemented");
-		break;
-	default:
-		WARNING("AddConstructProcess: unknown command %d", command);
-		break;
-	}
+	struct parts_cp_command cmd = {
+		.type        = ints[2].i,
+		.interp_type = ints[3].i,
+		.sx          = ints[4].i,
+		.sy          = ints[5].i,
+		.sw          = ints[6].i,
+		.sh          = ints[7].i,
+		.dx          = ints[8].i,
+		.dy          = ints[9].i,
+		.dw          = ints[12].i,
+		.dh          = ints[13].i,
+		.r           = ints[14].i,
+		.g           = ints[15].i,
+		.b           = ints[16].i,
+		.a           = ints[17].i,
+		.char_space  = ints[21].i,
+		.line_space  = ints[22].i,
+		.font_type   = ints[23].i,
+		.font_size   = ints[24].i,
+		.font_r      = ints[25].i,
+		.font_g      = ints[26].i,
+		.font_b      = ints[27].i,
+		.edge_r      = ints[28].i,
+		.edge_g      = ints[29].i,
+		.edge_b      = ints[30].i,
+		.full_size   = ints[31].i,
+		.bold_weight = floats[0].f,
+		.edge_weight = floats[1].f,
+		.text        = heap_get_string(strings[0].i),
+		.cg_name     = heap_get_string(strings[1].i),
+	};
+	PE_add_construct_process(ints[0].i, ints[1].i, &cmd);
 }
 
 // Rance9 predates the layer functions at func_id 3-5.  Use the numbering from
@@ -293,6 +212,97 @@ static int PartsEngine_PartsFunc(int func_id, struct page **array_int,
 		REQUIRE_STRINGS(1);
 		ints[1].i = PE_save_thumbnail(heap_get_string(strings[0].i), ints[0].i);
 		return 1;
+	case 10:  // bool Activity_IsLoaded(string Name)
+		REQUIRE_STRINGS(1);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_is_loaded(heap_get_string(strings[0].i));
+		return 1;
+	case 15:  // int Activity_NumofParts(string Name)
+		REQUIRE_STRINGS(1);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_numof_parts(heap_get_string(strings[0].i));
+		return 1;
+	case 16:  // bool Activity_GetParts(int Index, string Name, ref string PartsName, ref int Number)
+		REQUIRE_STRINGS(2);
+		REQUIRE_INTS(3);
+		ints[2].i = PE_activity_get_parts(heap_get_string(strings[0].i), ints[0].i,
+				&heap[strings[1].i].s, &ints[1].i);
+		return 1;
+	case 17:  // bool Activity_IsExistPartsByName(string Name, string PartsName)
+		REQUIRE_STRINGS(2);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_is_exist_parts_by_name(heap_get_string(strings[0].i),
+				heap_get_string(strings[1].i));
+		return 1;
+	case 18:  // bool Activity_IsExistPartsByNumber(string Name, int Number)
+		REQUIRE_STRINGS(1);
+		REQUIRE_INTS(2);
+		ints[1].i = PE_activity_is_exist_parts_by_number(heap_get_string(strings[0].i),
+				ints[0].i);
+		return 1;
+	case 19:  // int Activity_GetPartsNumber(string Name, string PartsName)
+		REQUIRE_STRINGS(2);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_get_parts_number(heap_get_string(strings[0].i),
+				heap_get_string(strings[1].i));
+		return 1;
+	case 20:  // string Activity_GetPartsName(string Name, int Number)
+		REQUIRE_STRINGS(2);
+		REQUIRE_INTS(1);
+		PE_activity_get_parts_name(heap_get_string(strings[0].i), ints[0].i,
+				&heap[strings[1].i].s);
+		return 1;
+	case 21:  // Activity_ReadFile(string Name, string FileName)
+		REQUIRE_STRINGS(2);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_read_file(heap_get_string(strings[0].i),
+				heap_get_string(strings[1].i));
+		return 1;
+	case 23:  // bool Activity_IsExistFile(string FileName)
+		REQUIRE_STRINGS(1);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_is_exist_file(heap_get_string(strings[0].i));
+		return 1;
+	case 26:  // bool Activity_IsExistIntentData(string Name, string PartsName)
+		REQUIRE_STRINGS(2);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_is_exist_intent_data(heap_get_string(strings[0].i),
+				heap_get_string(strings[1].i));
+		return 1;
+	case 27:  // int Activity_NumofIntentDataDestination(string Name, string PartsName)
+		REQUIRE_STRINGS(2);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_numof_intent_data_destination(heap_get_string(strings[0].i),
+				heap_get_string(strings[1].i));
+		return 1;
+	case 28:  // string Activity_GetIntentDataDestination(int Index, string Name, string PartsName)
+		REQUIRE_STRINGS(3);
+		REQUIRE_INTS(1);
+		PE_activity_get_intent_data_destination(heap_get_string(strings[0].i),
+				heap_get_string(strings[1].i), ints[0].i, &heap[strings[2].i].s);
+		return 1;
+	case 29:  // int Activity_GetIntentDataType(string Name, string PartsName)
+		REQUIRE_STRINGS(2);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_get_intent_data_type(heap_get_string(strings[0].i),
+				heap_get_string(strings[1].i));
+		return 1;
+	case 31:  // string Activity_GetFunc(string Name, string PartsName, int State, string MapID)
+		REQUIRE_STRINGS(4);
+		REQUIRE_INTS(1);
+		PE_activity_get_func(heap_get_string(strings[0].i), heap_get_string(strings[1].i),
+				ints[0].i, heap_get_string(strings[2].i), &heap[strings[3].i].s);
+		return 1;
+	case 41:  // int Activity_NumofEndKey(string Name)
+		REQUIRE_STRINGS(1);
+		REQUIRE_INTS(1);
+		ints[0].i = PE_activity_numof_end_key(heap_get_string(strings[0].i));
+		return 1;
+	case 42:  // int Activity_GetEndKey(string Name, int Index)
+		REQUIRE_STRINGS(1);
+		REQUIRE_INTS(2);
+		ints[1].i = PE_activity_get_end_key(heap_get_string(strings[0].i), ints[0].i);
+		return 1;
 	case 43:  // float PARTS_GetAbsoluteX(int number)
 		REQUIRE_INTS(1);
 		REQUIRE_FLOATS(1);
@@ -306,6 +316,10 @@ static int PartsEngine_PartsFunc(int func_id, struct page **array_int,
 	case 45:  // int PARTS_GetAbsoluteZ(int number)
 		REQUIRE_INTS(2);
 		ints[1].i = PE_parts_get_absolute_z(ints[0].i);
+		return 1;
+	case 46:  // int PARTS_GetAbsoluteMaxZ(int number)
+		REQUIRE_INTS(2);
+		ints[1].i = PE_parts_get_absolute_max_z(ints[0].i);
 		return 1;
 	case 48:  // void PARTS_SetLockInputState(int number, bool lock)
 		REQUIRE_INTS(2);
@@ -349,6 +363,11 @@ static int PartsEngine_PartsFunc(int func_id, struct page **array_int,
 		}
 		return 1;
 	}
+	case 158:  // void SetFlatUpdateSpeedRate(int parts_no, float rate, int state)
+		REQUIRE_INTS(2);
+		REQUIRE_FLOATS(1);
+		PE_SetFlatUpdateSpeedRate(ints[0].i, floats[0].f, ints[1].i);
+		return 1;
 	case 162:  // AddConstructProcess(ArrayInt[32], ArrayFloat[2], ArrayString[2])
 		REQUIRE_INTS(32);
 		REQUIRE_FLOATS(2);
@@ -556,7 +575,7 @@ HLL_LIBRARY(PartsEngine,
 	    HLL_EXPORT(Parts_SetThumbnailMode, PE_SetThumbnailMode),
 	    HLL_EXPORT(GetClickNumber, PE_GetClickPartsNumber),
 	    HLL_EXPORT(StopSoundWithoutSystemSound, PartsEngine_StopSoundWithoutSystemSound),
-	    HLL_TODO_EXPORT(ReleaseActivity, PartsEngine_ReleaseActivity),
+	    HLL_EXPORT(ReleaseActivity, PE_ReleaseActivity),
 	    HLL_TODO_EXPORT(CrateActivityBinary, PartsEngine_CrateActivityBinary),
 	    HLL_TODO_EXPORT(ReadActivityBinary, PartsEngine_ReadActivityBinary),
 	    HLL_EXPORT(ReleaseMessage, PE_ReleaseMessage),
@@ -893,7 +912,74 @@ HLL_LIBRARY(PartsEngine,
 	    HLL_TODO_EXPORT(Parts_IsPartsPixelDecide, PartsEngine_Parts_IsPartsPixelDecide),
 	    HLL_EXPORT(Parts_IsCursorIn, PE_IsCursorIn),
 	    HLL_TODO_EXPORT(SaveParts, PartsEngine_SaveParts),
-	    HLL_TODO_EXPORT(LoadParts, PartsEngine_LoadParts)
+	    HLL_TODO_EXPORT(LoadParts, PartsEngine_LoadParts),
+	    // Evenicle
+	    HLL_TODO_EXPORT(GetActiveParts, PartsEngine_GetActiveParts),
+	    HLL_TODO_EXPORT(SetClickMissSoundName, PartsEngine_SetClickMissSoundName),
+	    HLL_TODO_EXPORT(GetClickMissSoundName, PartsEngine_GetClickMissSoundName),
+	    HLL_TODO_EXPORT(AddComponentMotionAddColor, PartsEngine_AddComponentMotionAddColor),
+	    HLL_TODO_EXPORT(AddComponentMotionMulColor, PartsEngine_AddComponentMotionMulColor),
+	    HLL_TODO_EXPORT(Parts_SetSoundName, PartsEngine_Parts_SetSoundName),
+	    HLL_TODO_EXPORT(Parts_GetSoundName, PartsEngine_Parts_GetSoundName),
+	    HLL_TODO_EXPORT(Parts_SetPosForRate, PartsEngine_Parts_SetPosForRate),
+	    HLL_TODO_EXPORT(Parts_IsPosForRate, PartsEngine_Parts_IsPosForRate),
+	    HLL_TODO_EXPORT(SetButtonFlatName, PartsEngine_SetButtonFlatName),
+	    HLL_TODO_EXPORT(GetButtonFlatName, PartsEngine_GetButtonFlatName),
+	    HLL_TODO_EXPORT(SetCheckBoxFlatName, PartsEngine_SetCheckBoxFlatName),
+	    HLL_TODO_EXPORT(GetCheckBoxFlatName, PartsEngine_GetCheckBoxFlatName),
+	    HLL_TODO_EXPORT(SetVScrollbarFlatName, PartsEngine_SetVScrollbarFlatName),
+	    HLL_TODO_EXPORT(GetVScrollbarFlatName, PartsEngine_GetVScrollbarFlatName),
+	    HLL_TODO_EXPORT(SetHScrollbarFlatName, PartsEngine_SetHScrollbarFlatName),
+	    HLL_TODO_EXPORT(GetHScrollbarFlatName, PartsEngine_GetHScrollbarFlatName),
+	    HLL_TODO_EXPORT(SetTextBoxBGColor, PartsEngine_SetTextBoxBGColor),
+	    HLL_TODO_EXPORT(GetTextBoxBGR, PartsEngine_GetTextBoxBGR),
+	    HLL_TODO_EXPORT(GetTextBoxBGG, PartsEngine_GetTextBoxBGG),
+	    HLL_TODO_EXPORT(GetTextBoxBGB, PartsEngine_GetTextBoxBGB),
+	    HLL_TODO_EXPORT(SetTextBoxReadOnlyBGColor, PartsEngine_SetTextBoxReadOnlyBGColor),
+	    HLL_TODO_EXPORT(GetTextBoxReadOnlyBGR, PartsEngine_GetTextBoxReadOnlyBGR),
+	    HLL_TODO_EXPORT(GetTextBoxReadOnlyBGG, PartsEngine_GetTextBoxReadOnlyBGG),
+	    HLL_TODO_EXPORT(GetTextBoxReadOnlyBGB, PartsEngine_GetTextBoxReadOnlyBGB),
+	    HLL_TODO_EXPORT(SetTextBoxFrameColor, PartsEngine_SetTextBoxFrameColor),
+	    HLL_TODO_EXPORT(GetTextBoxFrameR, PartsEngine_GetTextBoxFrameR),
+	    HLL_TODO_EXPORT(GetTextBoxFrameG, PartsEngine_GetTextBoxFrameG),
+	    HLL_TODO_EXPORT(GetTextBoxFrameB, PartsEngine_GetTextBoxFrameB),
+	    HLL_TODO_EXPORT(SetOpenTextBoxIME, PartsEngine_SetOpenTextBoxIME),
+	    HLL_TODO_EXPORT(IsOpenTextBoxIME, PartsEngine_IsOpenTextBoxIME),
+	    HLL_TODO_EXPORT(SetMultiTextBoxReadOnly, PartsEngine_SetMultiTextBoxReadOnly),
+	    HLL_TODO_EXPORT(IsMultiTextBoxReadOnly, PartsEngine_IsMultiTextBoxReadOnly),
+	    HLL_TODO_EXPORT(SetMultiTextBoxBGColor, PartsEngine_SetMultiTextBoxBGColor),
+	    HLL_TODO_EXPORT(GetMultiTextBoxBGR, PartsEngine_GetMultiTextBoxBGR),
+	    HLL_TODO_EXPORT(GetMultiTextBoxBGG, PartsEngine_GetMultiTextBoxBGG),
+	    HLL_TODO_EXPORT(GetMultiTextBoxBGB, PartsEngine_GetMultiTextBoxBGB),
+	    HLL_TODO_EXPORT(SetMultiTextBoxReadOnlyBGColor, PartsEngine_SetMultiTextBoxReadOnlyBGColor),
+	    HLL_TODO_EXPORT(GetMultiTextBoxReadOnlyBGR, PartsEngine_GetMultiTextBoxReadOnlyBGR),
+	    HLL_TODO_EXPORT(GetMultiTextBoxReadOnlyBGG, PartsEngine_GetMultiTextBoxReadOnlyBGG),
+	    HLL_TODO_EXPORT(GetMultiTextBoxReadOnlyBGB, PartsEngine_GetMultiTextBoxReadOnlyBGB),
+	    HLL_TODO_EXPORT(SetMultiTextBoxFrameColor, PartsEngine_SetMultiTextBoxFrameColor),
+	    HLL_TODO_EXPORT(GetMultiTextBoxFrameR, PartsEngine_GetMultiTextBoxFrameR),
+	    HLL_TODO_EXPORT(GetMultiTextBoxFrameG, PartsEngine_GetMultiTextBoxFrameG),
+	    HLL_TODO_EXPORT(GetMultiTextBoxFrameB, PartsEngine_GetMultiTextBoxFrameB),
+	    HLL_TODO_EXPORT(SetLayoutBoxReturnSizeForRate, PartsEngine_SetLayoutBoxReturnSizeForRate),
+	    HLL_TODO_EXPORT(IsLayoutBoxReturnSizeForRate, PartsEngine_IsLayoutBoxReturnSizeForRate),
+	    HLL_TODO_EXPORT(Parts_SetTextShowTime, PartsEngine_Parts_SetTextShowTime),
+	    HLL_TODO_EXPORT(Parts_GetTextShowTime, PartsEngine_Parts_GetTextShowTime),
+	    HLL_TODO_EXPORT(Parts_SetTextPos, PartsEngine_Parts_SetTextPos),
+	    HLL_TODO_EXPORT(Parts_GetTextPos, PartsEngine_Parts_GetTextPos),
+	    HLL_TODO_EXPORT(Parts_SetTextEnableTag, PartsEngine_Parts_SetTextEnableTag),
+	    HLL_TODO_EXPORT(Parts_IsTextEnableTag, PartsEngine_Parts_IsTextEnableTag),
+	    HLL_TODO_EXPORT(Parts_SetRubyFont, PartsEngine_Parts_SetRubyFont),
+	    HLL_TODO_EXPORT(Parts_GetRubyFont, PartsEngine_Parts_GetRubyFont),
+	    HLL_TODO_EXPORT(Parts_SetRubyCharSpace, PartsEngine_Parts_SetRubyCharSpace),
+	    HLL_TODO_EXPORT(Parts_GetRubyCharSpace, PartsEngine_Parts_GetRubyCharSpace),
+	    HLL_TODO_EXPORT(Parts_JumpFlatLabel, PartsEngine_Parts_JumpFlatLabel),
+	    HLL_TODO_EXPORT(Parts_PlaySound, PartsEngine_Parts_PlaySound),
+	    HLL_TODO_EXPORT(ClearBackScene, PartsEngine_ClearBackScene),
+	    HLL_TODO_EXPORT(SetFontColorForBackScene, PartsEngine_SetFontColorForBackScene),
+	    HLL_TODO_EXPORT(SetMulColorForBackScene, PartsEngine_SetMulColorForBackScene),
+	    HLL_TODO_EXPORT(SetAlphaForBackScene, PartsEngine_SetAlphaForBackScene),
+	    HLL_TODO_EXPORT(SetShowForBackScene, PartsEngine_SetShowForBackScene),
+	    HLL_TODO_EXPORT(SaveBackScene, PartsEngine_SaveBackScene),
+	    HLL_TODO_EXPORT(LoadBackScene, PartsEngine_LoadBackScene)
 	    );
 
 static struct ain_hll_function *get_fun(int libno, const char *name)
@@ -922,6 +1008,19 @@ static void PartsEngine_PreLink(void)
 	if (fun && fun->nr_arguments == 5) {
 		static_library_replace(&lib_PartsEngine, "Update",
 				PartsEngine_Update_Pascha3PC);
+	}
+	fun = get_fun(libno, "AddMotionSound");
+	if (fun && fun->nr_arguments == 2 && fun->arguments[0].type.data == AIN_STRING) {
+		static_library_replace(&lib_PartsEngine, "AddMotionSound", NULL);
+	}
+	fun = get_fun(libno, "SetLayoutBoxReturn");
+	if (fun && fun->nr_arguments == 3 && fun->arguments[2].type.data == AIN_FLOAT) {
+		static_library_replace(&lib_PartsEngine, "SetLayoutBoxReturn", NULL);
+	}
+	fun = get_fun(libno, "GetLayoutBoxReturnSize");
+	if (fun && fun->return_type.data == AIN_FLOAT) {
+		static_library_replace(&lib_PartsEngine, "GetLayoutBoxReturnSize",
+				PartsEngine_GetLayoutBoxReturnSize_float);
 	}
 	if (get_fun(libno, "AddController")) {
 		PE_enable_multi_controller();

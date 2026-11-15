@@ -324,6 +324,7 @@ struct parts_flat {
 	bool stopped;
 	bool needs_advance;
 	unsigned elapsed;
+	float update_speed_rate;
 	int end_frame;
 	int pending_seek_delta;
 	struct flat_layer_state *root_state;
@@ -478,6 +479,7 @@ void parts_set_scale_y(struct parts *parts, float mag);
 void parts_set_rotation_z(struct parts *parts, float rot);
 void parts_set_alpha(struct parts *parts, int alpha);
 void parts_set_state(struct parts *parts, enum parts_state_type state);
+void parts_set_parent(struct parts *parts, struct parts *parent);
 void parts_release(int parts_no);
 void parts_release_all(void);
 void parts_set_surface_area(struct parts *parts, struct parts_common *common, int x, int y, int w, int h);
@@ -521,6 +523,9 @@ void parts_dirty(struct parts *parts);
 void parts_sprite_render(struct sprite *sp);
 void parts_render(struct parts *parts);
 void parts_render_family(struct parts *parts);
+
+// activity.c
+void parts_activity_fini(void);
 
 // motion.c
 void parts_clear_motion(struct parts *parts);
