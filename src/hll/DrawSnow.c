@@ -57,7 +57,7 @@ struct draw_snow_plugin {
 
 static inline float frand(void)
 {
-	return ((float)rand() / RAND_MAX);
+	return ((float)rand() / (float)RAND_MAX);
 }
 
 static struct draw_snow_plugin *get_draw_snow_plugin(int sprite)
